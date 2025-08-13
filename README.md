@@ -59,38 +59,46 @@ Now for the actual testing - I specifically target each of those 6 critical serv
 ## Goal
 Show how the system behaves when the CPU is maxed out while memory stays normal.
 
+
+
+# Test Setup
+
+- **Stress Tool:** `stress-ng` with CPU workers only (no memory stress via `--vm`).  
+- **Kubernetes Requests/Limits:**  
+  - CPU request: `300m`  
+  - CPU limit: `3 cores` per container  
+
+**Monitored in Grafana:**  
+- CPU utilisation  
+- Minimum CPU guaranteed  
+- Maximum CPU allowed  
+
 ---
 
-## Test Setup
+# Baseline: CPU Usage at Idle
 
-Used `stress-ng` with `--cpu` workers only (no `--vm` arguments for memory stress).  
-Kubernetes requests/limits:  
-CPU request: 300s  
-CPU limit: 3 cores (per container)  
-
-Monitored in Grafana:  
-CPU utilisation  
-Minimum CPU Guaranteed  
-Maximum CPU Allowed  
-
-## Baseline: CPU Usage at Idle
 <p align="center">
   <img src="https://github.com/user-attachments/assets/f199f2ef-6f21-419e-ad42-8bf2cb582e88" width="70%" />
 </p>
-*Caption: Grafana CPU panel at idle load.*
+<p align="center"><strong>Grafana CPU panel at idle load</strong></p>
 
-## Stress Applied: CPU Pressure Only
+---
+
+# Stress Applied: CPU Pressure Only
+
 <p align="center">
   <img src="https://github.com/user-attachments/assets/d9f7e250-0c97-42d8-8282-e26e611896bf" width="70%" />
 </p>
-*Caption: CPU usage spiking under stress-ng load.*
+<p align="center"><strong>CPU usage spiking under stress-ng load</strong></p>
 
 **Why meters turned red:**  
-The Grafana panels turned red because the CPU usage crossed the configured alert threshold (80%+). This indicates saturation and risk of throttling.
+The Grafana panels turned red because CPU usage crossed the alert threshold (80%+), indicating saturation and risk of throttling.
 
-## Actions Taken
+---
 
-Applied Kubernetes CPU limits per container to prevent a single pod from consuming all available cores.  
+# Actions Taken
+
+- Applied **Kubernetes CPU limits** per container to prevent a single pod from consuming all available cores.  
 
 <p align="center">
   <img src="https://github.com/user-attachments/assets/c6ba4a02-85e9-4b61-9987-682abc790f96" width="70%" />
@@ -99,11 +107,11 @@ Applied Kubernetes CPU limits per container to prevent a single pod from consumi
   <img src="https://github.com/user-attachments/assets/363172b3-e43b-4b1e-9dbf-5b1c949f14fc" width="70%" />
 </p>
 
-This shows that applied Kubernetes CPU limits of 250m per container and memory limits of 256Mi, ensuring no single service can monopolize node CPU or memory resources.  
-
-Configured Horizontal Pod Autoscaler (HPA) to scale replicas when CPU usage exceeds 75% for more than 15 seconds.  
-Minimum pods: 1  
-Maximum pods: 5  
+- Configured **limits:** CPU `250m` / Memory `256Mi` per container.  
+- Configured **Horizontal Pod Autoscaler (HPA):**  
+  - Scale when CPU usage > 75% for 15s  
+  - Minimum pods: 1  
+  - Maximum pods: 5  
 
 <p align="center">
   <img src="https://github.com/user-attachments/assets/fcf06b77-32c4-4d05-9fd2-897a0cb1ad04" width="70%" />
@@ -114,22 +122,28 @@ Maximum pods: 5
 
 ---
 
-## Result After Mitigation
+# Result After Mitigation
+
 <p align="center">
   <img src="https://github.com/user-attachments/assets/31d5b7ee-2799-4fe8-8e34-a07ba44d7931" width="70%" />
 </p>
-*Caption: CPU utilization stabilized after applying limits and HPA.*
+<p align="center"><strong>CPU utilization stabilized after applying limits and HPA</strong></p>
 
-CPU utilization stabilized (~48%) despite same load being applied.  
+- CPU utilization stabilized around **48%** despite same load.  
 
 **Why Grafana Gauge Shows 92% Red:**  
-The Grafana gauge is relative to pod CPU limit, not absolute node capacity.  
-Even if actual node CPU is ~48%, the pod may still be using 92% of its allocated quota, triggering the red zone.  
+- Gauges are relative to pod CPU limit, not absolute node capacity.  
+- Even if node CPU is ~48%, the pod may appear at 92% of its allocated quota, triggering the red zone.  
 
-API latency reduced compared to stress phase, confirming load distribution via HPA.
+- API latency reduced compared to stress phase, confirming load distribution via HPA.
 
-## Conclusion
+---
+
+# Conclusion
+
 This test demonstrates:  
-How CPU saturation impacts performance.  
-The importance of setting realistic CPU limits and using autoscaling.  
-Grafana gauge readings can appear “red” due to limit-relative scaling, not absolute CPU usage.
+- How CPU saturation impacts performance.  
+- The importance of **realistic CPU limits** and **autoscaling**.  
+- Grafana gauge readings can appear “red” due to **limit-relative scaling**, not absolute CPU usage.
+
+> ⚠️ **Note for Reviewers:** This README is a living document and being updated regularly. The content, proofs, and formatting are in progress please refer to the commit history to see the latest changes.
