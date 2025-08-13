@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: cpu-stress
+  namespace: default
+spec:
+  containers:
+  - name: stress
+    image: progrium/stress
+    args:
+      - "--cpu"
+      - "4"
+      - "--timeout"
+      - "60s"
+  restartPolicy: Never
