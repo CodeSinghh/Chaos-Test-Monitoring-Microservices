@@ -1,5 +1,0 @@
-services:
-  test-nginx:
-    image: nginx
-    ports:
-      - "8080:80"
