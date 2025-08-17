@@ -171,5 +171,15 @@ Demonstrate how the system behaves when memory utilization increases, while keep
 - Observed OOMKill events via:
 ```bash
 kubectl describe pod ram-stress
-
+```
+### create pod 
+```bash
+kubectl apply -f ram-stress.yaml
+```
+### Monotring the pod in terminal that it created succefully or not 
+```bash
+kubectl get pods ram-stress
+kubectl describe pod ram-stress
+kubectl logs ram-stress
+```
 > ⚠️ **Note for Reviewers:** This README is a living document and being updated regularly. The content, proofs, and formatting are in progress please refer to the commit history to see the latest changes.
