@@ -146,4 +146,30 @@ This test demonstrates:
 - The importance of **realistic CPU limits** and **autoscaling**.  
 - Grafana gauge readings can appear “red” due to **limit-relative scaling**, not absolute CPU usage.
 
+## RAM-Only Stress Test
+
+### Goal
+Demonstrate how the system behaves when memory utilization increases, while keeping CPU load normal.
+
+### Test Setup
+- Used `stress-ng` with only memory workers: `--vm N --vm-bytes <size>`.
+- Started small at 25% memory allocation, then gradually increased to observe behavior.
+- No CPU workers used (`--cpu` omitted).
+
+### Kubernetes Setup
+- Memory requests and limits set to ensure scheduler can allocate memory safely:
+  - Requests: 2 GiB
+  - Limits: 4 GiB
+- Pod runs once (`restartPolicy: Never`) to monitor effects.
+- Pod Disruption Budget (PDB) recommended for critical pods to prevent eviction during node stress.
+
+### Monitoring
+- Grafana panels used:
+  - `container_memory_usage_bytes`
+  - `container_memory_rss`
+  - `container_memory_limits`
+- Observed OOMKill events via:
+```bash
+kubectl describe pod ram-stress
+
 > ⚠️ **Note for Reviewers:** This README is a living document and being updated regularly. The content, proofs, and formatting are in progress please refer to the commit history to see the latest changes.
