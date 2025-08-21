@@ -29,13 +29,12 @@ Now that the entire infrastructure is built, it's time to begin the attack phase
 
 Based on my knowledge and expertise, every company has different systems and services powering their infrastructure. Testing 100+ or even 1000+ possible failure scenarios isn't practical—it requires precise and exact knowledge of their current setup. Instead, the right approach is identifying which specific services need testing, then strengthening those weak points.
 
-After careful analysis, I found that most cloud-based companies rely on a few critical services that, if disrupted, can cause major failures. So, I've narrowed it down to the top 6 most vulnerable areas to target:
+After careful analysis, I found that most cloud-based companies rely on a few critical services that, if disrupted, can cause major failures. So, I've narrowed it down to the top most vulnerable areas to target:
 
 1. **CPU-only stress behavior** – Overloading CPU to test throttling and auto-scaling
 2. **RAM-only stress behavior** – Exhausting memory to check crash recovery
 3. **Pod Kill** – Randomly terminating Kubernetes pods to verify self-healing
 4. **Service Kill** – Force-stopping core services to test redundancy
-5. **Node Drain** – Simulating node failures in multi-node clusters
 
 These tests cover the most likely failure points in modern cloud environments.
 
@@ -183,7 +182,8 @@ kubectl describe pod ram-stress
 kubectl logs ram-stress
 ```
 
-Chaos Engineering: Pod Restart Test This experiment demonstrates Kubernetes' self-healing capabilities by simulating a pod failure and observing its automatic recovery. The goal is to show how Kubernetes ensures service availability by automatically recreating a deleted pod to maintain the desired state.
+## Pod Restart Test
+This experiment demonstrates Kubernetes' self-healing capabilities by simulating a pod failure and observing its automatic recovery. The goal is to show how Kubernetes ensures service availability by automatically recreating a deleted pod to maintain the desired state.
 
 ### 1. Goal
 To prove that Kubernetes automatically restarts a pod if it crashes or is manually deleted. This is a core function of a ReplicaSet, which ensures the desired number of replicas is always running.
@@ -226,12 +226,36 @@ Metrics: Monitor the kube_pod_container_status_restarts_total metric in Grafana.
 ### 4. What This Proves
 This experiment highlights a fundamental aspect of Kubernetes: resilience. The ReplicaSet automatically detects the pod count discrepancy and takes immediate action to correct it. This automated recovery process ensures that an application's service remains uninterrupted even in the face of individual pod failures, demonstrating the platform's self-healing capabilities without any manual intervention.
 
+## API Traffic Burst
+This experiment tests your system's resilience by simulating a sudden and significant increase in API traffic. The goal is to demonstrate how the Horizontal Pod Autoscaler (HPA) automatically scales your application to handle the load and how rate limiting can protect your backend services.
 
+### Goal
+To prove that the system can handle a sudden high volume of API requests without service disruption, leveraging HPA to scale out pods and rate limiting to prevent overload.
 
+### Test Setup and Execution
+Set up the load test: Use a tool like hey to generate a high volume of requests over a short period.
 
+```bash
+hey -z 30s -q 200 -m GET http://34.123.45.67:30001/users
+hey -z 30s -q 200 -m GET http://34.123.45.67:30002/videos
+```
+Simulate different request types: If applicable, perform separate tests for GET and POST requests to observe any differences in behavior.
 
+### Monitoring and Verification
 
+Grafana Dashboards:
+- **Request Rate**: Monitor the rate(http_requests_total[1m]) metric to see the spike in traffic.
+- **Latency**: Observe the histogram_quantile to check for any increase in API response times under load.
+- **Resource Utilization**: Watch the CPU and memory panels to see the resource usage increase across your pods.
+- **Kubernetes Events**: Use the kubectl command to monitor the HPA for scaling events. You should see new replicas being added to handle the increased load.
 
+```bash
+kubectl get hpa --watch
+```
 
+### What This Proves
+This experiment highlights two crucial aspects of a resilient system: automated scaling and traffic management.
 
-> ⚠️ **Note for Reviewers:** This README is a living document and being updated regularly. The content, proofs, and formatting are in progress please refer to the commit history to see the latest changes.
+- **Horizontal Pod Autoscaling (HPA)** automatically detects the increased CPU utilization caused by the traffic burst and adds new replicas to distribute the load, preventing the service from becoming overwhelmed.
+
+- **API Gateway Rate Limiting** is a key defense mechanism that prevents the backend from being flooded with requests, protecting it from being a single point of failure and ensuring a stable service.
